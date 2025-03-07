@@ -41,7 +41,7 @@ def get_info() -> InfoResponse:
     return {"version": __version__}
 
 
-@router.get("/ok")
-def ok() -> str:
+@router.get("/health")
+def health() -> dict:
     """Are we OK?"""
-    return "OK"
+    return {"status": "OK"}

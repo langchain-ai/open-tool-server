@@ -336,8 +336,8 @@ class AsyncClient:
     async def info(self) -> Any:
         return await self.http.get("/info")
 
-    async def ok(self) -> Any:
-        return await self.http.get("/ok")
+    async def health(self) -> Any:
+        return await self.http.get("/health")
 
 
 class SyncClient:
@@ -351,8 +351,8 @@ class SyncClient:
     def info(self) -> Any:
         return self.http.get("/info")
 
-    def ok(self) -> Any:
-        return self.http.get("/ok")
+    def health(self) -> Any:
+        return self.http.get("/health")
 
 
 class AsyncToolsClient:
@@ -366,9 +366,12 @@ class AsyncToolsClient:
         """List tools."""
         return await self.http.get("/tools")
 
-    async def call(self, name: str, args: Dict[str, Any]) -> Any:
+    async def call(self, tool_id: str, args: Dict[str, Any] | None = None) -> Any:
         """Call a tool."""
-        return await self.http.post("/tools/call", json={"name": name, "args": args})
+        payload = {"tool_id": tool_id}
+        if args is not None:
+            payload["input"] = args
+        return await self.http.post("/tools/execute", json=payload)
 
     async def as_langchain_tools(
         self, *, select: Sequence[str] | None = None
@@ -423,7 +426,7 @@ class AsyncToolsClient:
                 StructuredTool(
                     name=tool_name,
                     description=tool_spec["description"],
-                    args_schema=tool_spec["inputSchema"],
+                    args_schema=tool_spec["input_schema"],
                     coroutine=create_tool_caller(tool_name),
                 )
             )
@@ -441,9 +444,13 @@ class SyncToolsClient:
         """List tools."""
         return self.http.get("/tools")
 
-    def call(self, name: str, args: Dict[str, Any]) -> Any:
+    def call(self, tool_id: str, args: Dict[str, Any] | None = None) -> Any:
         """Call a tool."""
-        return self.http.post("/tools/call", json={"name": name, "args": args})
+
+        payload = {"tool_id": tool_id}
+        if args is not None:
+            payload["input"] = args
+        return self.http.post("/tools/execute", json=payload)
 
     def as_langchain_tools(
         self, *, select: Sequence[str] | None = None
