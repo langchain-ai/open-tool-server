@@ -3,13 +3,16 @@
 from contextlib import asynccontextmanager
 from typing import Annotated, AsyncGenerator, Optional, cast
 
+from ..unit_tests.utils import AnyStr
+
+
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, HTTPStatusError
-from open_tool_client import AsyncClient, get_async_client
 from starlette.authentication import BaseUser
 from starlette.requests import Request
 
+from open_tool_client import AsyncClient, get_async_client
 from open_tool_server import Server
 from open_tool_server._version import __version__
 from open_tool_server.auth import Auth
@@ -226,6 +229,8 @@ async def test_auth_list_tools() -> None:
                 "description": "Say hello.",
                 "input_schema": {"properties": {}, "type": "object"},
                 "name": "say_hello",
+                "id": "say_hello",
+                "version": "1.0.0",
             }
         ]
 
@@ -261,19 +266,21 @@ async def test_call_tool_with_auth() -> None:
     app.add_auth(auth)
 
     async with get_async_test_client(app, headers={"x-api-key": "1"}) as client:
-        assert await client.tools.execute("say_hello", {}) == "Hello"
-
+        assert await client.tools.execute("say_hello", {}) == {
+            "execution_id": AnyStr(),
+            "output": {"value": "Hello"},
+            "success": True,
+        }
     async with get_async_test_client(app, headers={"x-api-key": "2"}) as client:
         # `2` does not have permission to call `say_hello`
         with pytest.raises(HTTPStatusError) as exception_info:
-            assert await client.tools.execute("say_hello", {}) == "Hello"
+            assert await client.tools.execute("say_hello", {})
         assert exception_info.value.response.status_code == 403
 
     async with get_async_test_client(app, headers={"x-api-key": "3"}) as client:
         # `3` does not have permission to call `say_hello`
         with pytest.raises(HTTPStatusError) as exception_info:
-            assert await client.tools.execute("say_hello", {}) == "Hello"
-
+            assert await client.tools.execute("say_hello", {})
         assert exception_info.value.response.status_code == 401
 
 
@@ -318,8 +325,7 @@ async def test_call_tool_with_injected() -> None:
     async with get_async_test_client(app, headers={"x-api-key": "3"}) as client:
         # Make sure this raises 401?
         with pytest.raises(HTTPStatusError) as exception_info:
-            result = client.tools.execute("get_user_identity", {})
-
+            client.tools.execute("get_user_identity", {})
         assert exception_info.value.response.status_code == 403
 
     # Authenticated but tool does not exist

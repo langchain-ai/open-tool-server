@@ -21,7 +21,7 @@ class RegisteredTool(TypedDict):
     """Description of the tool."""
     input_schema: Dict[str, Any]
     """Input schema of the tool."""
-    output_schema: NotRequired[Dict[str, Any]]
+    output_schema: Dict[str, Any]
     """Output schema of the tool."""
     fn: Callable[[Dict[str, Any]], Awaitable[Any]]
     """Function to call the tool."""
