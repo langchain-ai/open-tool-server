@@ -97,7 +97,7 @@ async def main():
     # List tools
     print(await client.tools.list())  # List of tools
     # Call a tool
-    print(await client.tools.call("add", {"x": 1, "y": 2}))  # 3
+    print(await client.tools.execute("add", {"x": 1, "y": 2}))  # 3
 
     # Get as langchain tools
     select_tools = ["echo", "add"]

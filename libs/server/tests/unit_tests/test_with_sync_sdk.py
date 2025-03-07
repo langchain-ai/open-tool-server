@@ -123,7 +123,7 @@ def test_call_tool() -> None:
         return x + y
 
     with get_sync_test_client(app) as client:
-        response = client.tools.call(
+        response = client.tools.execute(
             "say_hello",
             {},
         )
@@ -145,7 +145,7 @@ def test_create_langchain_tools_from_server() -> None:
         return x + y
 
     with get_sync_test_client(app) as client:
-        tools = client.tools.as_langchain_tools(select=["say_hello", "add"])
+        tools = client.tools.as_langchain_tools(tool_ids=["say_hello", "add"])
         say_hello_client_side = tools[0]
         add_client_side = tools[1]
 
@@ -215,7 +215,7 @@ def test_auth_list_tools() -> None:
             }
         ]
 
-        client.tools.call("say_hello", {})
+        client.tools.execute("say_hello", {})
 
 
 def test_call_tool_with_auth() -> None:
@@ -247,18 +247,18 @@ def test_call_tool_with_auth() -> None:
     app.add_auth(auth)
 
     with get_sync_test_client(app, headers={"x-api-key": "1"}) as client:
-        assert client.tools.call("say_hello", {}) == "Hello"
+        assert client.tools.execute("say_hello", {}) == "Hello"
 
     with get_sync_test_client(app, headers={"x-api-key": "2"}) as client:
         # `2` does not have permission to call `say_hello`
         with pytest.raises(HTTPStatusError) as exception_info:
-            assert client.tools.call("say_hello", {}) == "Hello"
+            assert client.tools.execute("say_hello", {}) == "Hello"
         assert exception_info.value.response.status_code == 403
 
     with get_sync_test_client(app, headers={"x-api-key": "3"}) as client:
         # `3` does not have permission to call `say_hello`
         with pytest.raises(HTTPStatusError) as exception_info:
-            assert client.tools.call("say_hello", {}) == "Hello"
+            assert client.tools.execute("say_hello", {}) == "Hello"
 
         assert exception_info.value.response.status_code == 401
 
@@ -294,17 +294,17 @@ def test_call_tool_with_injected() -> None:
     app.add_auth(auth)
 
     with get_sync_test_client(app, headers={"x-api-key": "1"}) as client:
-        user_identity = client.tools.call("get_user_identity", {})
+        user_identity = client.tools.execute("get_user_identity", {})
         assert user_identity == "some-user"
 
     with get_sync_test_client(app, headers={"x-api-key": "2"}) as client:
-        user_identity = client.tools.call("get_user_identity", {})
+        user_identity = client.tools.execute("get_user_identity", {})
         assert user_identity == "another-user"
 
     with get_sync_test_client(app, headers={"x-api-key": "3"}) as client:
         # Make sure this raises 401?
         with pytest.raises(HTTPStatusError) as exception_info:
-            client.tools.call("get_user_identity", {})
+            client.tools.execute("get_user_identity", {})
 
         assert exception_info.value.response.status_code == 403
 
@@ -312,7 +312,7 @@ def test_call_tool_with_injected() -> None:
     with get_sync_test_client(app, headers={"x-api-key": "1"}) as client:
         # Make sure this raises 401?
         with pytest.raises(HTTPStatusError) as exception_info:
-            client.tools.call("does_not_exist", {})
+            client.tools.execute("does_not_exist", {})
 
         assert exception_info.value.response.status_code == 404
 
@@ -320,6 +320,6 @@ def test_call_tool_with_injected() -> None:
     with get_sync_test_client(app, headers={"x-api-key": "6"}) as client:
         # Make sure this raises 401?
         with pytest.raises(HTTPStatusError) as exception_info:
-            client.tools.call("does_not_exist", {})
+            client.tools.execute("does_not_exist", {})
 
         assert exception_info.value.response.status_code == 401

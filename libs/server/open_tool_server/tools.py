@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, Awaitable, Callable, Dict, Union, cast, NotRequired, Tuple
+from typing import Any, Awaitable, Callable, Dict, NotRequired, Tuple, Union, cast
 
 from fastapi import APIRouter, HTTPException
 from fastapi.requests import Request
@@ -39,9 +39,9 @@ class RegisteredTool(TypedDict):
     """
     version: Tuple[int, int, int]
     """Version of the tool. Allows for semver versioning of tools.
-    
+
     The version is a tuple of three integers: (major, minor, patch).
-    
+
     A version of 1 will be represented as (1, 0, 0).
     """
 
@@ -148,19 +148,6 @@ class ExecuteToolResponse(TypedDict):
     """The output of the tool execution."""
 
 
-class Tool(TypedDict):
-    """Response from a tool."""
-
-    id: str
-    """Unique identifier for the tool."""
-    name: str
-    """Name of the tool."""
-    description: str
-    """Description of the tool."""
-    input_schema: Dict[str, Any]
-    """Input schema of the tool. This is a JSON schema."""
-
-
 class ToolDefinition(TypedDict):
     """Used in the response of the list tools endpoint."""
 
@@ -171,8 +158,7 @@ class ToolDefinition(TypedDict):
     """The name of the tool."""
 
     description: str
-    """A human-readable explanation of the tool's purpose. This field can be used by 
-    both humans and AI models."""
+    """A human-readable explanation of the tool's purpose."""
 
     input_schema: Dict[str, Any]
     """The input schema of the tool. This is a JSON schema."""
@@ -238,7 +224,7 @@ class ToolHandler:
     ) -> ExecuteToolResponse:
         """Calls a tool by name with the provided payload."""
         tool_id = execute_tool_request["tool_id"]
-        args = execute_tool_request["input"]
+        args = execute_tool_request.get("input", {})
         execution_id = execute_tool_request.get("execution_id", uuid.uuid4())
 
         if tool_id not in self.catalog:
@@ -321,7 +307,7 @@ def create_tools_router(tool_handler: ToolHandler) -> APIRouter:
     router = APIRouter()
 
     @router.get("", operation_id="list-tools")
-    async def list_tools(request: Request) -> list[Tool]:
+    async def list_tools(request: Request) -> list[ToolDefinition]:
         """Lists available tools."""
         return await tool_handler.list_tools(request)
 
